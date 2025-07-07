@@ -1,23 +1,28 @@
-"use client"
-export const dynamic = 'force-dynamic'
+// app/view-map/page.tsx
+// This component renders the interactive map view for a trip.
+// It now uses Suspense to ensure client-side map libraries are
+// only executed in the browser environment.
 
-import { useEffect, useState } from "react"
+'use client'; // This directive applies to the entire file, making it a client component.
+
+import React, { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { User } from "@supabase/supabase-js"
 import "leaflet/dist/leaflet.css"
-import { FiMapPin, FiClock, FiGlobe, FiNavigation, FiArrowLeft, FiCalendar, FiTruck, FiMenu, FiX } from "react-icons/fi" // Added FiMenu and FiX
+import { FiMapPin, FiClock, FiGlobe, FiNavigation, FiArrowLeft, FiCalendar, FiTruck, FiMenu, FiX } from "react-icons/fi"
 import { FaMap, FaPlane, FaCompass, FaLocationArrow } from "react-icons/fa"
 
 // Dynamically import react-leaflet components to prevent SSR issues
-import dynamic from "next/dynamic"
-
+// These imports are now safe because the component using them (InnerViewMapPage)
+// will itself be rendered client-side due to the Suspense wrapper.
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false })
 const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false })
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false })
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), { ssr: false })
 const Polyline = dynamic(() => import("react-leaflet").then((mod) => mod.Polyline), { ssr: false })
 
+// useMap is also a client-side hook, so it must be used within a client component.
 import { useMap } from "react-leaflet"
 
 // Define the structure of a SuggestedPlace (consistent with plan-trip-page)
@@ -61,7 +66,7 @@ interface FitBoundsToMarkersProps {
 }
 
 function FitBoundsToMarkers({ markers, routeCoordinates, leafletLoaded }: FitBoundsToMarkersProps) {
-  const map = useMap()
+  const map = useMap() // This hook is now safely within a client-side component
   const dataHash = JSON.stringify({ markers, routeCoordinates })
 
   useEffect(() => {
@@ -81,6 +86,7 @@ function FitBoundsToMarkers({ markers, routeCoordinates, leafletLoaded }: FitBou
       return
     }
 
+    // Ensure window.L is available before using it
     if (typeof window === "undefined" || !window.L) {
       console.warn("Leaflet's global L object is not available yet in FitBoundsToMarkers.")
       return
@@ -108,7 +114,8 @@ function FitBoundsToMarkers({ markers, routeCoordinates, leafletLoaded }: FitBou
   return null
 }
 
-export default function ViewMapPage() {
+// Inner component containing all the main logic for the map page
+function InnerViewMapPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tripId = searchParams.get("tripId")
@@ -124,7 +131,6 @@ export default function ViewMapPage() {
   const [loadingMapData, setLoadingMapData] = useState<boolean>(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [leafletLoaded, setLeafletLoaded] = useState<boolean>(false)
-  const [isClient, setIsClient] = useState<boolean>(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false) // State for mobile menu
 
   const orsApiKey = process.env.NEXT_PUBLIC_ORS_API_KEY
@@ -160,7 +166,6 @@ export default function ViewMapPage() {
 
   // Dynamically import Leaflet and fix icon issue on client-side only
   useEffect(() => {
-    setIsClient(true)
     if (typeof window !== "undefined") {
       import("leaflet").then((LModule) => {
         const L = LModule.default
@@ -320,7 +325,7 @@ export default function ViewMapPage() {
   // Effect to add markers and draw route when trip data is loaded
   useEffect(() => {
     const addMarkersAndRoute = async () => {
-      if (!trip || !leafletLoaded || !isClient) return
+      if (!trip || !leafletLoaded) return // Removed isClient from here, as this effect runs only when leafletLoaded is true
 
       setLoadingMapData(true)
       setMapError(null)
@@ -395,10 +400,10 @@ export default function ViewMapPage() {
       setLoadingMapData(false)
     }
 
-    if (trip && !loadingTrip && leafletLoaded && isClient) {
+    if (trip && !loadingTrip && leafletLoaded) { // Removed isClient from here
       addMarkersAndRoute()
     }
-  }, [trip, loadingTrip, leafletLoaded, isClient])
+  }, [trip, loadingTrip, leafletLoaded])
 
   // Helper function for navigation
   const navigateTo = (path: string) => {
@@ -416,7 +421,7 @@ export default function ViewMapPage() {
     })
   }
 
-  if (loadingUser || loadingTrip || !isClient || !leafletLoaded) {
+  if (loadingUser || loadingTrip || !leafletLoaded) { // Removed !isClient from here
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
         <div className="text-center">
@@ -430,7 +435,7 @@ export default function ViewMapPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 via-white to-orange-50">
-        <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/50 max-w-md mx-4"> {/* Added mx-4 for horizontal margin on small screens */}
+        <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/50 max-w-md mx-4">
           <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiMapPin className="text-rose-500 text-2xl" />
           </div>
@@ -450,7 +455,7 @@ export default function ViewMapPage() {
   if (!trip) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-sky-50">
-        <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/50 max-w-md mx-4"> {/* Added mx-4 for horizontal margin on small screens */}
+        <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-white/50 max-w-md mx-4">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaMap className="text-slate-500 text-2xl" />
           </div>
@@ -485,7 +490,6 @@ export default function ViewMapPage() {
             </div>
 
             {/* Mobile menu button */}
-            {/* Adjusted div to include 'flex items-center' and button for better sizing and tap target */}
             <div className="md:hidden flex items-center">
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-lg transition-all duration-200 text-slate-600 hover:text-sky-600 focus:outline-none">
                 {isMobileMenuOpen ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
@@ -543,58 +547,58 @@ export default function ViewMapPage() {
         )}
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8"> {/* Adjusted px-6 to px-4 sm:px-6 and py-8 to py-6 sm:py-8 */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header Section */}
-        <div className="mb-6 sm:mb-8"> {/* Adjusted mb-8 to mb-6 sm:mb-8 */}
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={() => router.push("/dashboard")}
-            className="inline-flex items-center text-slate-600 hover:text-sky-600 font-medium mb-4 sm:mb-6 transition-colors duration-200 group text-sm sm:text-base" // Adjusted mb-6 to mb-4 sm:mb-6 and text size
+            className="inline-flex items-center text-slate-600 hover:text-sky-600 font-medium mb-4 sm:mb-6 transition-colors duration-200 group text-sm sm:text-base"
           >
             <FiArrowLeft className="mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
             Back to Dashboard
           </button>
 
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 sm:p-8 mb-6 sm:mb-8"> {/* Adjusted p-8 to p-6 sm:p-8 and mb-8 to mb-6 sm:mb-8 */}
-            <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-4 sm:mb-6 text-center sm:text-left"> {/* Added flex-col sm:flex-row, items-center, text-center sm:text-left */}
-              <div className="mb-4 sm:mb-0"> {/* Added mb-4 sm:mb-0 */}
-                <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-2 sm:mb-4 flex items-center justify-center sm:justify-start"> {/* Adjusted text size for mobile and added justify-center */}
-                  <FiNavigation className="text-sky-500 mr-2 sm:mr-3 text-xl sm:text-auto" /> {/* Adjusted margin and text size */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 sm:p-8 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between mb-4 sm:mb-6 text-center sm:text-left">
+              <div className="mb-4 sm:mb-0">
+                <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-2 sm:mb-4 flex items-center justify-center sm:justify-start">
+                  <FiNavigation className="text-sky-500 mr-2 sm:mr-3 text-xl sm:text-auto" />
                   Interactive Map
                 </h2>
-                <div className="flex items-center justify-center sm:justify-start space-x-2 text-slate-600"> {/* Added justify-center sm:justify-start */}
-                  <FiMapPin className="text-emerald-500 text-lg sm:text-xl" /> {/* Adjusted text size */}
-                  <span className="text-lg sm:text-xl font-semibold">{trip.destination}</span> {/* Adjusted text size */}
+                <div className="flex items-center justify-center sm:justify-start space-x-2 text-slate-600">
+                  <FiMapPin className="text-emerald-500 text-lg sm:text-xl" />
+                  <span className="text-lg sm:text-xl font-semibold">{trip.destination}</span>
                 </div>
               </div>
-              <div className="text-center sm:text-right"> {/* Added text-center sm:text-right */}
-                <div className="bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl p-3 sm:p-4 border border-sky-100"> {/* Adjusted padding */}
-                  <div className="text-xl sm:text-2xl font-bold text-slate-800">{trip.suggested_places.length}</div> {/* Adjusted text size */}
-                  <div className="text-xs sm:text-sm text-slate-600">Places to Visit</div> {/* Adjusted text size */}
+              <div className="text-center sm:text-right">
+                <div className="bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl p-3 sm:p-4 border border-sky-100">
+                  <div className="text-xl sm:text-2xl font-bold text-slate-800">{trip.suggested_places.length}</div>
+                  <div className="text-xs sm:text-sm text-slate-600">Places to Visit</div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"> {/* Adjusted gap */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
               <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl">
-                <FiCalendar className="text-sky-500 text-lg sm:text-xl" /> {/* Adjusted text size */}
+                <FiCalendar className="text-sky-500 text-lg sm:text-xl" />
                 <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Travel Date</div> {/* Adjusted text size */}
-                  <div className="font-semibold text-slate-800 text-sm sm:text-base">{formatDate(trip.travel_date)}</div> {/* Adjusted text size */}
+                  <div className="text-xs sm:text-sm text-slate-600">Travel Date</div>
+                  <div className="font-semibold text-slate-800 text-sm sm:text-base">{formatDate(trip.travel_date)}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-emerald-50 to-sky-50 rounded-xl">
-                <FiClock className="text-emerald-500 text-lg sm:text-xl" /> {/* Adjusted text size */}
+                <FiClock className="text-emerald-500 text-lg sm:text-xl" />
                 <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Duration</div> {/* Adjusted text size */}
+                  <div className="text-xs sm:text-sm text-slate-600">Duration</div>
                   <div className="font-semibold text-slate-800 text-sm sm:text-base">
                     {trip.duration} day{trip.duration !== 1 ? "s" : ""}
                   </div>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl">
-                <FiTruck className="text-amber-500 text-lg sm:text-xl" /> {/* Adjusted text size */}
+                <FiTruck className="text-amber-500 text-lg sm:text-xl" />
                 <div>
-                  <div className="text-xs sm:text-sm text-slate-600">Travel Mode</div> {/* Adjusted text size */}
+                  <div className="text-xs sm:text-sm text-slate-600">Travel Mode</div>
                   <div className="font-semibold text-slate-800 text-sm sm:text-base">
                     {trip.preferred_travel_mode?.replace("_", " ") || "Not specified"}
                   </div>
@@ -606,9 +610,9 @@ export default function ViewMapPage() {
 
         {/* Map Error Display */}
         {mapError && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-center text-sm sm:text-base"> {/* Adjusted text size */}
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl mb-6 text-center text-sm sm:text-base">
             <div className="flex items-center justify-center mb-2">
-              <FiMapPin className="text-rose-500 mr-2 text-lg sm:text-xl" /> {/* Adjusted text size */}
+              <FiMapPin className="text-rose-500 mr-2 text-lg sm:text-xl" />
               <span className="font-medium">Map Loading Issue</span>
             </div>
             <div dangerouslySetInnerHTML={{ __html: mapError }}></div>
@@ -617,18 +621,18 @@ export default function ViewMapPage() {
 
         {/* Loading Indicator */}
         {loadingMapData && (
-          <div className="flex items-center justify-center p-4 sm:p-6 bg-sky-50 rounded-xl mb-6 border border-sky-200 text-sm sm:text-base"> {/* Adjusted padding and text size */}
-            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-sky-500 mr-3"></div> {/* Adjusted size */}
+          <div className="flex items-center justify-center p-4 sm:p-6 bg-sky-50 rounded-xl mb-6 border border-sky-200 text-sm sm:text-base">
+            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-sky-500 mr-3"></div>
             <span className="text-sky-700 font-medium">Loading map and route... This might take a moment.</span>
           </div>
         )}
 
         {/* Map Container */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-4 sm:p-6 mb-6 sm:mb-8"> {/* Adjusted padding and mb */}
-          <div className="h-[400px] sm:h-[500px] md:h-[600px] w-full relative rounded-xl overflow-hidden"> {/* Made height responsive */}
-            {isClient && leafletLoaded && !loadingUser && !loadingTrip && trip ? (
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="h-[400px] sm:h-[500px] md:h-[600px] w-full relative rounded-xl overflow-hidden">
+            {leafletLoaded && !loadingUser && !loadingTrip && trip ? (
               <MapContainer
-                key={`${trip.id}-${isClient}-${leafletLoaded}`}
+                key={`${trip.id}-${leafletLoaded}`}
                 center={mapCenter}
                 zoom={10}
                 scrollWheelZoom={true}
@@ -655,8 +659,8 @@ export default function ViewMapPage() {
             ) : (
               <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-sky-50 rounded-xl">
                 <div className="text-center">
-                  <FaCompass className="text-3xl sm:text-4xl text-slate-400 mx-auto mb-3 sm:mb-4 animate-spin" /> {/* Adjusted size and mb */}
-                  <p className="text-slate-600 font-medium text-sm sm:text-base">Initializing map...</p> {/* Adjusted text size */}
+                  <FaCompass className="text-3xl sm:text-4xl text-slate-400 mx-auto mb-3 sm:mb-4 animate-spin" />
+                  <p className="text-slate-600 font-medium text-sm sm:text-base">Initializing map...</p>
                 </div>
               </div>
             )}
@@ -664,35 +668,35 @@ export default function ViewMapPage() {
         </div>
 
         {/* Trip Places List */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 sm:p-8 mb-6 sm:mb-8"> {/* Adjusted padding and mb */}
-          <h3 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6 flex items-center justify-center sm:justify-start"> {/* Adjusted text size and added justify-center */}
-            <FaLocationArrow className="text-emerald-500 mr-2 sm:mr-3 text-lg sm:text-auto" /> {/* Adjusted margin and size */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 sm:p-8 mb-6 sm:mb-8">
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6 flex items-center justify-center sm:justify-start">
+            <FaLocationArrow className="text-emerald-500 mr-2 sm:mr-3 text-lg sm:text-auto" />
             Places on Your Route
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"> {/* Adjusted gap */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {trip.starting_point && (
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl border border-sky-100"> {/* Adjusted padding */}
+              <div className="p-3 sm:p-4 bg-gradient-to-r from-sky-50 to-emerald-50 rounded-xl border border-sky-100">
                 <div className="flex items-center mb-2">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-sky-500 rounded-full flex items-center justify-center mr-2 sm:mr-3"> {/* Adjusted size and margin */}
-                    <FaPlane className="text-white text-xs sm:text-sm" /> {/* Adjusted text size */}
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-sky-500 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                    <FaPlane className="text-white text-xs sm:text-sm" />
                   </div>
-                  <h4 className="font-semibold text-slate-800 text-sm sm:text-base">Starting Point</h4> {/* Adjusted text size */}
+                  <h4 className="font-semibold text-slate-800 text-sm sm:text-base">Starting Point</h4>
                 </div>
-                <p className="text-slate-600 text-xs sm:text-sm">{trip.starting_point}</p> {/* Adjusted text size */}
+                <p className="text-slate-600 text-xs sm:text-sm">{trip.starting_point}</p>
               </div>
             )}
             {trip.suggested_places.map((place, index) => (
               <div
                 key={index}
                 className="p-3 sm:p-4 bg-gradient-to-r from-emerald-50 to-sky-50 rounded-xl border border-emerald-100"
-              > {/* Adjusted padding */}
+              >
                 <div className="flex items-center mb-2">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500 rounded-full flex items-center justify-center mr-2 sm:mr-3"> {/* Adjusted size and margin */}
-                    <span className="text-white text-xs sm:text-sm font-bold">{index + 1}</span> {/* Adjusted text size */}
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                    <span className="text-white text-xs sm:text-sm font-bold">{index + 1}</span>
                   </div>
-                  <h4 className="font-semibold text-slate-800 text-sm sm:text-base">{place.name}</h4> {/* Adjusted text size */}
+                  <h4 className="font-semibold text-slate-800 text-sm sm:text-base">{place.name}</h4>
                 </div>
-                <p className="text-slate-600 text-xs sm:text-sm mb-2">{place.description}</p> {/* Adjusted text size */}
+                <p className="text-slate-600 text-xs sm:text-sm mb-2">{place.description}</p>
                 {place.time_to_visit && (
                   <div className="flex items-center text-xs text-slate-500">
                     <FiClock className="mr-1" />
@@ -706,19 +710,19 @@ export default function ViewMapPage() {
 
         {/* Action Buttons */}
         <div className="text-center">
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4"> {/* Adjusted gap and added flex-col sm:flex-row */}
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <button
               onClick={() => router.push(`/trip/${tripId}`)}
-              className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base" // Adjusted padding and text size
+              className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
             >
-              <FiGlobe className="mr-2 sm:mr-3" /> {/* Adjusted margin */}
+              <FiGlobe className="mr-2 sm:mr-3" />
               View Detailed Plan
             </button>
             <button
               onClick={() => router.push("/dashboard")}
-              className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base" // Adjusted padding and text size
+              className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
             >
-              <FaCompass className="mr-2 sm:mr-3" /> {/* Adjusted margin */}
+              <FaCompass className="mr-2 sm:mr-3" />
               Back to Dashboard
             </button>
           </div>
@@ -726,4 +730,20 @@ export default function ViewMapPage() {
       </div>
     </div>
   )
+}
+
+// The main page component that wraps InnerViewMapPage in Suspense
+export default function ViewMapPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <p className="text-slate-600 text-lg font-medium">Loading map planner...</p>
+        </div>
+      </div>
+    }>
+      <InnerViewMapPage />
+    </Suspense>
+  );
 }
