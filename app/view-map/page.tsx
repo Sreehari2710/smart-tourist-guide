@@ -13,6 +13,8 @@ import "leaflet/dist/leaflet.css"
 import { FiMapPin, FiClock, FiGlobe, FiNavigation, FiArrowLeft, FiCalendar, FiTruck, FiMenu, FiX } from "react-icons/fi"
 import { FaMap, FaPlane, FaCompass, FaLocationArrow } from "react-icons/fa"
 
+import dynamic from 'next/dynamic' // Correctly import dynamic
+
 // Dynamically import react-leaflet components to prevent SSR issues
 // These imports are now safe because the component using them (InnerViewMapPage)
 // will itself be rendered client-side due to the Suspense wrapper.
