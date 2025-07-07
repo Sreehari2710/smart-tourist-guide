@@ -1,48 +1,39 @@
-// app/plan-trip/page.tsx
-// This file now acts as a wrapper for the main trip planning logic,
-// using Suspense to ensure client-side hooks like useSearchParams are
-// only executed in the browser environment.
-
-'use client'; // This directive applies to the entire file, making it a client component.
-
-export const dynamic = 'force-dynamic'; // Added to ensure dynamic rendering and prevent SSR issues
-
-import type React from "react"
-import { useState, useEffect, useRef, useCallback, Suspense } from "react" // Added Suspense
-import { useRouter, useSearchParams } from "next/navigation" // Import useSearchParams hook
-import { supabase } from "@/lib/supabase" // Import Supabase client
-import type { User } from "@supabase/supabase-js" // Import User type
+'use client'
+import React, { useEffect, useState, useRef, useCallback, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { supabase } from "@/lib/supabase"
+import type { User } from "@supabase/supabase-js"
 import {
-  FiMapPin, // For Destination City input icon
-  FiCalendar, // For Travel Date input icon
-  FiClock, // For Duration input icon
-  FiCoffee, // For Cafes interest
-  FiShoppingCart, // For Shopping interest
-  FiGlobe, // For Current Location/GPS / Starting Point
-  FiMail, // For Email Itinerary
-  FiTarget, // For Shortest Route Optimization
-  FiStar, // For Top-rated places
-  FiUsers, // For Avoid crowded places (as in many many people)
-  FiSend, // For chat send button
-  FiMessageSquare, // For chat icon
-  FiRefreshCcw, // For regenerate button
+  FiMapPin,
+  FiCalendar,
+  FiClock,
+  FiCoffee,
+  FiShoppingCart,
+  FiGlobe,
+  FiMail,
+  FiTarget,
+  FiStar,
+  FiUsers,
+  FiSend,
+  FiMessageSquare,
+  FiRefreshCcw,
   FiCompass,
-  FiMap, // For map icon
-  FiNavigation, // For navigation icon
-  FiZap, // For quick suggestions
-  FiMenu, // For hamburger icon
-  FiX, // For close icon
+  FiMap,
+  FiNavigation,
+  FiZap,
+  FiMenu,
+  FiX,
 } from "react-icons/fi"
 import {
-  FaLandmark, // For Temples, Historical Places
-  FaWater, // For Water Parks
-  FaTree, // For Nature/Parks
-  FaSpa, // For Wellness/Spas
-  FaPaintBrush, // For Art & Museums
-  FaUtensils, // For Food & Local Cuisine
-  FaWalking, // For walk mode
-  FaCar, // For car mode
-  FaBus, // For public transport mode
+  FaLandmark,
+  FaWater,
+  FaTree,
+  FaSpa,
+  FaPaintBrush,
+  FaUtensils,
+  FaWalking,
+  FaCar,
+  FaBus,
 } from "react-icons/fa"
 
 // Define the structure of a SuggestedPlace (AI's output)
@@ -89,7 +80,7 @@ const availableInterests: Interest[] = [
   { id: "food_local_cuisine", name: "Food & Local Cuisine", icon: FaUtensils },
 ]
 
-// Inner component that contains all the actual page logic and uses useSearchParams
+// This inner component holds all the logic & uses useSearchParams safely
 function InnerPlanTripPage() {
   const router = useRouter()
   const searchParams = useSearchParams() // useSearchParams is now safely inside this component
@@ -1413,4 +1404,3 @@ export default function PlanTripPageWrapper() {
     </Suspense>
   );
 }
-git add app/plan-trip/page.tsx
