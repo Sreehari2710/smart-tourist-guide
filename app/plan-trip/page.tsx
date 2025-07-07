@@ -1,4 +1,7 @@
 'use client'
+
+export const dynamic = 'force-dynamic'; // Re-added to ensure dynamic rendering and prevent SSR issues
+
 import React, { useEffect, useState, useRef, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -1188,7 +1191,9 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                               <FiMessageSquare className="text-violet-500 text-xs" />
                             </div>
                             <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"></div>
+                              <div
+                                className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                              ></div>
                               <div
                                 className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
                                 style={{ animationDelay: "0.1s" }}
