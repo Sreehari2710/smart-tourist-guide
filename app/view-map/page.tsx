@@ -5,6 +5,8 @@
 
 'use client'; // This directive applies to the entire file, making it a client component.
 
+export const dynamic = 'force-dynamic'; // Added to ensure dynamic rendering and prevent SSR issues
+
 import React, { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
