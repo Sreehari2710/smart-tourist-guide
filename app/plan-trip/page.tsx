@@ -3,6 +3,8 @@ import React, { useEffect, useState, useRef, useCallback, Suspense } from "react
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { User } from "@supabase/supabase-js"
+import dynamic from 'next/dynamic' // Import dynamic for client-side only rendering
+
 import {
   FiMapPin,
   FiCalendar,
@@ -81,7 +83,7 @@ const availableInterests: Interest[] = [
 ]
 
 // This inner component holds all the logic & uses useSearchParams safely
-function InnerPlanTripPage() {
+function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wrapper
   const router = useRouter()
   const searchParams = useSearchParams() // useSearchParams is now safely inside this component
 
@@ -1389,7 +1391,13 @@ function InnerPlanTripPage() {
   );
 }
 
-// The main page component that wraps InnerPlanTripPage in Suspense
+// Dynamically import the InnerPlanTripPageContent component
+// This ensures useSearchParams is only called on the client side.
+const DynamicInnerPlanTripPageContent = dynamic(() => Promise.resolve(InnerPlanTripPageContent), {
+  ssr: false,
+});
+
+// The main page component that wraps the dynamically imported InnerPlanTripPageContent in Suspense
 export default function PlanTripPageWrapper() {
   return (
     <Suspense fallback={
@@ -1400,7 +1408,7 @@ export default function PlanTripPageWrapper() {
         </div>
       </div>
     }>
-      <InnerPlanTripPage />
+      <DynamicInnerPlanTripPageContent />
     </Suspense>
   );
 }
