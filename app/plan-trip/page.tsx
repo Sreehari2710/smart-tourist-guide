@@ -5,6 +5,8 @@
 
 'use client'; // This directive applies to the entire file, making it a client component.
 
+export const dynamic = 'force-dynamic'; // Added to ensure dynamic rendering and prevent SSR issues
+
 import type React from "react"
 import { useState, useEffect, useRef, useCallback, Suspense } from "react" // Added Suspense
 import { useRouter, useSearchParams } from "next/navigation" // Import useSearchParams hook
@@ -1411,3 +1413,4 @@ export default function PlanTripPageWrapper() {
     </Suspense>
   );
 }
+git add app/plan-trip/page.tsx
