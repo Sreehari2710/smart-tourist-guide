@@ -1,13 +1,13 @@
 // app/plan-trip/page.tsx
-// This component renders the UI for planning a new trip, now with a conversational AI interface
-// powered by Gemini API for refining trip suggestions. It is explicitly a client component.
+// This file now acts as a wrapper for the main trip planning logic,
+// using Suspense to ensure client-side hooks like useSearchParams are
+// only executed in the browser environment.
 
-'use client'; // This directive is essential for client-side interactivity.
+'use client'; // This directive applies to the entire file, making it a client component.
 
 import type React from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
-import { useRouter } from "next/navigation" // For navigation to other pages
-import { useSearchParams } from "next/navigation" // Import useSearchParams hook
+import { useState, useEffect, useRef, useCallback, Suspense } from "react" // Added Suspense
+import { useRouter, useSearchParams } from "next/navigation" // Import useSearchParams hook
 import { supabase } from "@/lib/supabase" // Import Supabase client
 import type { User } from "@supabase/supabase-js" // Import User type
 import {
@@ -87,9 +87,10 @@ const availableInterests: Interest[] = [
   { id: "food_local_cuisine", name: "Food & Local Cuisine", icon: FaUtensils },
 ]
 
-export default function PlanTripPage() {
+// Inner component that contains all the actual page logic and uses useSearchParams
+function InnerPlanTripPage() {
   const router = useRouter()
-  const searchParams = useSearchParams() // Use useSearchParams hook at the top level
+  const searchParams = useSearchParams() // useSearchParams is now safely inside this component
 
   const [user, setUser] = useState<User | null>(null)
   const [loadingUser, setLoadingUser] = useState<boolean>(true)
@@ -1302,7 +1303,7 @@ export default function PlanTripPage() {
                 </div>
                 <h4 className="text-xl font-bold text-slate-800 mb-2">Interactive Map View</h4>
                 <p className="text-slate-600 text-sm mb-4">
-                  Visualize your itinerary on an interactive map with routes and locations.
+                  Visualize your itinerary on an "interactive map with routes and locations."
                 </p>
                 <div className="flex items-center justify-center space-x-4 text-xs text-slate-500 mb-4">
                   <div className="flex items-center">
@@ -1392,5 +1393,21 @@ export default function PlanTripPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// The main page component that wraps InnerPlanTripPage in Suspense
+export default function PlanTripPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <p className="text-slate-600 text-lg font-medium">Loading trip planner...</p>
+        </div>
+      </div>
+    }>
+      <InnerPlanTripPage />
+    </Suspense>
   );
 }
