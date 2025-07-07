@@ -1,25 +1,24 @@
 // app/view-map/page.tsx
 // This component renders the interactive map view for a trip.
-// It now uses Suspense to ensure client-side map libraries are
-// only executed in the browser environment.
+// It now ensures client-side map libraries are only executed in the browser environment
+// by conditionally rendering the main content after client-side hydration.
 
 'use client'; // This directive applies to the entire file, making it a client component.
-
-export const dynamic = 'force-dynamic'; // Added to ensure dynamic rendering and prevent SSR issues
 
 import React, { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { User } from "@supabase/supabase-js"
 import "leaflet/dist/leaflet.css"
-import { FiMapPin, FiClock, FiGlobe, FiNavigation, FiArrowLeft, FiCalendar, FiTruck, FiMenu, FiX } from "react-icons/fi"
+import { FiMapPin, FiClock, FiGlobe, FiNavigation, FiArrowLeft, FiCalendar, FiTruck, FiMenu, FiX } from "react-icons/fi" // Added FiMenu and FiX
 import { FaMap, FaPlane, FaCompass, FaLocationArrow } from "react-icons/fa"
 
-import dynamic from 'next/dynamic' // Correctly import dynamic
+// Removed duplicate import: import dynamic from 'next/dynamic' // Correctly import dynamic
 
 // Dynamically import react-leaflet components to prevent SSR issues
 // These imports are now safe because the component using them (InnerViewMapPage)
-// will itself be rendered client-side due to the Suspense wrapper.
+// will itself be rendered client-side due to the conditional rendering in ViewMapPageWrapper.
+import dynamic from 'next/dynamic' // Keep this one as it's correctly used for dynamic imports below
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false })
 const TileLayer = dynamic(() => import("react-leaflet").then((mod) => mod.TileLayer), { ssr: false })
 const Marker = dynamic(() => import("react-leaflet").then((mod) => mod.Marker), { ssr: false })
@@ -34,6 +33,8 @@ interface SuggestedPlace {
   name: string
   description: string
   time_to_visit?: string
+  latitude?: number
+  longitude?: number
 }
 
 // Define the structure of a Trip item (consistent with plan-trip-page)
@@ -302,8 +303,13 @@ function InnerViewMapPage() {
       })
 
       if (!response.ok) {
-        const errorBody = await response.json()
-        throw new Error(`ORS Directions error: ${response.status} - ${JSON.stringify(errorBody)}`)
+        let errorBody = await response.text();
+        try {
+            errorBody = JSON.stringify(await response.json());
+        } catch (e) {
+            // If response is not JSON, use plain text
+        }
+        throw new Error(`ORS Directions error: ${response.status} - ${errorBody}`)
       }
 
       const data = await response.json()
@@ -329,7 +335,7 @@ function InnerViewMapPage() {
   // Effect to add markers and draw route when trip data is loaded
   useEffect(() => {
     const addMarkersAndRoute = async () => {
-      if (!trip || !leafletLoaded) return // Removed isClient from here, as this effect runs only when leafletLoaded is true
+      if (!trip || !leafletLoaded) return
 
       setLoadingMapData(true)
       setMapError(null)
@@ -404,10 +410,10 @@ function InnerViewMapPage() {
       setLoadingMapData(false)
     }
 
-    if (trip && !loadingTrip && leafletLoaded) { // Removed isClient from here
+    if (trip && !loadingTrip && leafletLoaded) {
       addMarkersAndRoute()
     }
-  }, [trip, loadingTrip, leafletLoaded])
+  }, [trip, loadingTrip, leafletLoaded, orsApiKey]) // Added orsApiKey to dependencies
 
   // Helper function for navigation
   const navigateTo = (path: string) => {
@@ -425,7 +431,7 @@ function InnerViewMapPage() {
     })
   }
 
-  if (loadingUser || loadingTrip || !leafletLoaded) { // Removed !isClient from here
+  if (loadingUser || loadingTrip || !leafletLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
         <div className="text-center">
