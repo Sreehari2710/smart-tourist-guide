@@ -1380,8 +1380,27 @@ function InnerPlanTripPageContent() {
   );
 }
 
-// The main page component that wraps InnerPlanTripPageContent in Suspense
-export default function PlanTripPageWrapper() {
+// The main page component that wraps InnerPlanTripPageContent in a client-side only wrapper
+// to ensure useSearchParams is never called during SSR/prerendering.
+function ClientSidePlanTripPageWrapper() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    // Render a loading state or null during SSR
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500 mx-auto mb-4"></div>
+          <p className="text-slate-600 text-lg font-medium">Loading trip planner...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50">
@@ -1395,3 +1414,5 @@ export default function PlanTripPageWrapper() {
     </Suspense>
   );
 }
+
+export default ClientSidePlanTripPageWrapper;
