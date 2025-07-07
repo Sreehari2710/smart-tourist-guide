@@ -1,58 +1,57 @@
 'use client'
 
-export const dynamic = 'force-dynamic'; // Re-added to ensure dynamic rendering and prevent SSR issues
+export const dynamic = 'force-dynamic'; // Ensures dynamic rendering and helps prevent SSR issues
 
-import React, { useEffect, useState, useRef, useCallback, Suspense } from "react"
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import type { User } from "@supabase/supabase-js"
-import dynamic from 'next/dynamic' // Import dynamic for client-side only rendering
 
 import {
-  FiMapPin,
-  FiCalendar,
-  FiClock,
-  FiCoffee,
-  FiShoppingCart,
-  FiGlobe,
-  FiMail,
-  FiTarget,
-  FiStar,
-  FiUsers,
-  FiSend,
-  FiMessageSquare,
-  FiRefreshCcw,
+  FiMapPin, // For Destination City input icon
+  FiCalendar, // For Travel Date input icon
+  FiClock, // For Duration input icon
+  FiCoffee, // For Cafes interest
+  FiShoppingCart, // For Shopping interest
+  FiGlobe, // For Current Location/GPS / Starting Point
+  FiMail, // For Email Itinerary
+  FiTarget, // For Shortest Route Optimization
+  FiStar, // For Top-rated places
+  FiUsers, // For Avoid crowded places (as in many many people)
+  FiSend, // For chat send button
+  FiMessageSquare, // For chat icon
+  FiRefreshCcw, // For regenerate button
   FiCompass,
-  FiMap,
-  FiNavigation,
-  FiZap,
-  FiMenu,
-  FiX,
+  FiMap, // For map icon
+  FiNavigation, // For navigation icon
+  FiZap, // For quick suggestions
+  FiMenu, // For hamburger icon
+  FiX, // For close icon
 } from "react-icons/fi"
 import {
-  FaLandmark,
-  FaWater,
-  FaTree,
-  FaSpa,
-  FaPaintBrush,
-  FaUtensils,
-  FaWalking,
-  FaCar,
-  FaBus,
+  FaLandmark, // For Temples, Historical Places
+  FaWater, // For Water Parks
+  FaTree, // For Nature/Parks
+  FaSpa, // For Wellness/Spas
+  FaPaintBrush, // For Art & Museums
+  FaUtensils, // For Food & Local Cuisine
+  FaWalking, // For walk mode
+  FaCar, // For car mode
+  FaBus, // For public transport mode
 } from "react-icons/fa"
 
 // Define the structure of a SuggestedPlace (AI's output)
 interface SuggestedPlace {
   name: string
   description: string
-  time_to_visit?: string // NEW: Estimated time to visit this place
+  time_to_visit?: string // Estimated time to visit this place
 }
 
 // Define the structure of a Trip item (for Supabase)
 interface Trip {
   id: string
   user_id: string
-  starting_point: string // NEW: Starting point of the trip
+  starting_point: string // Starting point of the trip
   destination: string
   travel_date: string
   duration: number
@@ -76,7 +75,7 @@ interface Interest {
 const availableInterests: Interest[] = [
   { id: "historical_places", name: "Historical Places", icon: FaLandmark },
   { id: "temples", name: "Temples", icon: FaLandmark },
-  { id: "adventure_parks", name: "Adventure Parks", icon: FaWater }, // Using FaWater for water parks, FaFlag for general adventure
+  { id: "adventure_parks", name: "Adventure Parks", icon: FaWater },
   { id: "cafes", name: "Cafes", icon: FiCoffee },
   { id: "shopping", name: "Shopping", icon: FiShoppingCart },
   { id: "nature_parks", name: "Nature/Parks", icon: FaTree },
@@ -85,8 +84,8 @@ const availableInterests: Interest[] = [
   { id: "food_local_cuisine", name: "Food & Local Cuisine", icon: FaUtensils },
 ]
 
-// This inner component holds all the logic & uses useSearchParams safely
-function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wrapper
+// This inner component holds all the logic and uses useSearchParams safely
+function InnerPlanTripPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams() // useSearchParams is now safely inside this component
 
@@ -94,12 +93,12 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
   const [loadingUser, setLoadingUser] = useState<boolean>(true)
 
   // Form states
-  const [startingPoint, setStartingPoint] = useState<string>("") // NEW: Starting Point
+  const [startingPoint, setStartingPoint] = useState<string>("")
   const [destination, setDestination] = useState<string>("")
   const [travelDate, setTravelDate] = useState<string>("")
   const [duration, setDuration] = useState<number | "">(1)
   const [interests, setInterests] = useState<string[]>([])
-  const [preferredTravelMode, setPreferredTravelMode] = useState<string>("car") // 'car', 'walk', 'public_transport'
+  const [preferredTravelMode, setPreferredTravelMode] = useState<string>("car")
   const [shortestRouteOptimization, setShortestRouteOptimization] = useState<boolean>(true)
   const [showTopRatedPlaces, setShowTopRatedPlaces] = useState<boolean>(true)
   const [avoidCrowdedPlaces, setAvoidCrowdedPlaces] = useState<boolean>(false)
@@ -110,8 +109,8 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
   const [formMessage, setFormMessage] = useState<string | null>(null)
   const [formMessageType, setFormMessageType] = useState<"success" | "error" | null>(null)
   const [suggestedPlaces, setSuggestedPlaces] = useState<SuggestedPlace[]>([])
-  const [currentTripId, setCurrentTripId] = useState<string | null>(null) // To store the ID of the newly created trip
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false) // NEW: State for mobile menu
+  const [currentTripId, setCurrentTripId] = useState<string | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
 
   // Autocomplete states for Start Point and Destination
   const [startingPointInput, setStartingPointInput] = useState<string>("")
@@ -142,7 +141,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
     const checkUser = async () => {
       const {
         data: { user } = { user: null },
-      } = await supabase.auth.getUser() // Destructure with default value
+      } = await supabase.auth.getUser()
       if (!user) {
         router.push("/")
       } else {
@@ -180,7 +179,6 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
   // Handle re-planning: Load existing trip data if replanTripId is present
   useEffect(() => {
     const loadTripForReplan = async () => {
-      // Access replanTripId inside useEffect to ensure searchParams is available
       const currentReplanTripId = searchParams ? searchParams.get("replanTripId") : null
       if (currentReplanTripId && user) {
         setLoadingPlan(true)
@@ -210,7 +208,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
             setAvoidCrowdedPlaces(data.avoid_crowded_places ?? false)
             setSendEmailCopy(data.send_email_copy ?? true)
             setSuggestedPlaces(data.suggested_places || [])
-            setCurrentTripId(data.id) // Set current trip ID for potential updates
+            setCurrentTripId(data.id)
             setFormMessage("Previous trip data loaded for re-planning!")
             setFormMessageType("success")
           }
@@ -221,16 +219,14 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
     }
 
     if (user && !loadingUser && searchParams) {
-      // Add searchParams to dependency array
       loadTripForReplan()
     }
-  }, [user, loadingUser, searchParams]) // Re-fetch if user, loadingUser, or searchParams changes
+  }, [user, loadingUser, searchParams])
 
   // OpenStreetMap Nominatim API for place suggestions (international)
   const fetchPlaceSuggestions = useCallback(
     async (input: string, setSuggestions: React.Dispatch<React.SetStateAction<string[]>>) => {
       if (!input || input.length < 3) {
-        // Require at least 3 characters for suggestions
         setSuggestions([])
         return
       }
@@ -242,7 +238,6 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
       setTypingTimeout(
         setTimeout(async () => {
           try {
-            // Using Nominatim's public endpoint. Be mindful of their usage policy.
             const response = await fetch(
               `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}&limit=5&addressdetails=1`,
             )
@@ -257,7 +252,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
             setSuggestions([])
           }
         }, 300),
-      ) // Debounce time
+      )
     },
     [typingTimeout],
   )
@@ -283,7 +278,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
       showTopRatedPlaces: boolean
       avoidCrowdedPlaces: boolean
       sendEmailCopy: boolean
-      suggestedPlaces: SuggestedPlace[] // Current suggestions to refine
+      suggestedPlaces: SuggestedPlace[]
     },
   ): Promise<SuggestedPlace[] | null> => {
     // Convert interest IDs to human-readable names for the prompt
@@ -342,9 +337,9 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
               properties: {
                 name: { type: "STRING" },
                 description: { type: "STRING" },
-                time_to_visit: { type: "STRING" }, // Added time_to_visit to schema
+                time_to_visit: { type: "STRING" },
               },
-              propertyOrdering: ["name", "description", "time_to_visit"], // Maintain order of properties
+              propertyOrdering: ["name", "description", "time_to_visit"],
             },
           },
         },
@@ -385,7 +380,6 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
         const jsonString = result.candidates[0].content.parts[0].text
         try {
           const parsedJson: SuggestedPlace[] = JSON.parse(jsonString)
-          // Validate the parsed JSON against the expected structure
           if (
             Array.isArray(parsedJson) &&
             parsedJson.every(
@@ -397,7 +391,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                 "description" in item &&
                 typeof item.description === "string" &&
                 "time_to_visit" in item &&
-                typeof item.time_to_visit === "string", // Ensure time_to_visit is present and string
+                typeof item.time_to_visit === "string",
             )
           ) {
             return parsedJson
@@ -423,11 +417,11 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
 
   // Handle form submission to generate and save the trip plan
   const handleGeneratePlan = async (e?: React.FormEvent) => {
-    e?.preventDefault() // Use optional chaining here
+    e?.preventDefault()
     setLoadingPlan(true)
     setFormMessage(null)
-    setSuggestedPlaces([]) // Clear previous suggestions
-    setChatHistory([]) // Clear chat history
+    setSuggestedPlaces([])
+    setChatHistory([])
 
     if (!user) {
       setFormMessage("You must be logged in to plan a trip.")
@@ -495,12 +489,11 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
           showTopRatedPlaces,
           avoidCrowdedPlaces,
           sendEmailCopy,
-          suggestedPlaces: [], // No current suggestions yet
+          suggestedPlaces: [],
         },
       )
 
       if (!initialSuggestedPlaces) {
-        // Error message would have been set by getGeminiSuggestions
         setLoadingPlan(false)
         return
       }
@@ -514,12 +507,12 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
         .from("trips")
         .insert({
           user_id: user.id,
-          starting_point: startingPoint, // Save starting point
+          starting_point: startingPoint,
           destination,
           travel_date: travelDate,
           duration,
           interests,
-          suggested_places: initialSuggestedPlaces, // Save the AI-generated places
+          suggested_places: initialSuggestedPlaces,
           preferred_travel_mode: preferredTravelMode,
           shortest_route_optimization: shortestRouteOptimization,
           show_top_rated_places: showTopRatedPlaces,
@@ -533,14 +526,14 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
         throw new Error(`Supabase error saving trip: ${supabaseError.message}`)
       }
 
-      setCurrentTripId(newTrip.id) // Store the ID of the new trip
+      setCurrentTripId(newTrip.id)
       setFormMessage("Trip plan saved successfully!")
       setFormMessageType("success")
 
       // Initialize chat history with the initial prompt and response
       setChatHistory([
         { role: "user", parts: [{ text: prompt }] },
-        { role: "model", parts: [{ text: JSON.stringify(initialSuggestedPlaces, null, 2) }] }, // Store the actual JSON response
+        { role: "model", parts: [{ text: JSON.stringify(initialSuggestedPlaces, null, 2) }] },
       ])
 
       setShowChat(true) // Show chat after initial plan generation
@@ -562,7 +555,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
     const userMessage: { role: string; parts: { text: string }[] } = { role: "user", parts: [{ text: chatInput }] }
     const newChatHistory = [...chatHistory, userMessage]
     setChatHistory(newChatHistory)
-    setChatInput("") // Clear input immediately
+    setChatInput("")
 
     try {
       // Fetch the latest trip data from Supabase to ensure AI has context
@@ -570,7 +563,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
         .from("trips")
         .select(
           "destination, travel_date, duration, interests, suggested_places, preferred_travel_mode, starting_point, shortest_route_optimization, show_top_rated_places, avoid_crowded_places, send_email_copy",
-        ) // Include all relevant fields
+        )
         .eq("id", currentTripId)
         .single()
 
@@ -579,8 +572,8 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
       }
 
       const refinedSuggestions = await getGeminiSuggestions(
-        userMessage.parts[0].text, // The user's latest message
-        newChatHistory, // Pass the full chat history for context
+        userMessage.parts[0].text,
+        newChatHistory,
         {
           startingPoint: latestTrip.starting_point || "",
           destination: latestTrip.destination,
@@ -591,7 +584,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
           showTopRatedPlaces: latestTrip.show_top_rated_places ?? true,
           avoidCrowdedPlaces: latestTrip.avoid_crowded_places ?? false,
           sendEmailCopy: latestTrip.send_email_copy ?? true,
-          suggestedPlaces: latestTrip.suggested_places || [], // Pass current suggestions for refinement
+          suggestedPlaces: latestTrip.suggested_places || [],
         },
       )
 
@@ -609,7 +602,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
             { role: "model", parts: [{ text: `Failed to save refined suggestions: ${updateError.message}` }] },
           ])
         } else {
-          setSuggestedPlaces(refinedSuggestions) // Update UI with new suggestions
+          setSuggestedPlaces(refinedSuggestions)
           setChatHistory((prev) => [
             ...prev,
             {
@@ -623,7 +616,6 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
           ])
         }
       } else {
-        // If new suggestions are null, it means an error occurred in getGeminiSuggestions
         setChatHistory((prev) => [
           ...prev,
           { role: "model", parts: [{ text: "I could not generate new suggestions based on your request. Please try rephrasing." }] },
@@ -659,7 +651,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
   // Helper function for navigation in the top bar
   const navigateTo = (path: string) => {
     router.push(path)
-    setIsMobileMenuOpen(false) // Close menu on navigation
+    setIsMobileMenuOpen(false)
   }
 
   if (loadingUser) {
@@ -787,7 +779,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                   value={startingPointInput}
                   onChange={(e) => {
                     setStartingPointInput(e.target.value)
-                    setStartingPoint(e.target.value) // Update actual value
+                    setStartingPoint(e.target.value)
                     fetchPlaceSuggestions(e.target.value, setStartingPointSuggestions)
                   }}
                   required
@@ -827,7 +819,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                   value={destinationInput}
                   onChange={(e) => {
                     setDestinationInput(e.target.value)
-                    setDestination(e.target.value) // Update actual value
+                    setDestination(e.target.value)
                     fetchPlaceSuggestions(e.target.value, setDestinationSuggestions)
                   }}
                   required
@@ -1187,22 +1179,15 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                       <div className="flex justify-start mb-4">
                         <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm max-w-[85%]">
                           <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center">
-                              <FiMessageSquare className="text-violet-500 text-xs" />
-                            </div>
-                            <div className="flex space-x-1">
-                              <div
-                                className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                            </div>
+                            <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"></div>
+                            <div
+                              className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.1s" }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-violet-400 rounded-full animate-bounce"
+                              style={{ animationDelay: "0.2s" }}
+                            ></div>
                           </div>
                         </div>
                       </div>
@@ -1322,7 +1307,6 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
                 <button
                   onClick={() => {
                     if (currentTripId) {
-                      // For now, we'll navigate to the trip details page which should have map functionality
                       router.push(`/view-map?tripId=${currentTripId}`);
                     }
                   }}
@@ -1396,13 +1380,7 @@ function InnerPlanTripPageContent() { // Renamed to avoid confusion with the wra
   );
 }
 
-// Dynamically import the InnerPlanTripPageContent component
-// This ensures useSearchParams is only called on the client side.
-const DynamicInnerPlanTripPageContent = dynamic(() => Promise.resolve(InnerPlanTripPageContent), {
-  ssr: false,
-});
-
-// The main page component that wraps the dynamically imported InnerPlanTripPageContent in Suspense
+// The main page component that wraps InnerPlanTripPageContent in Suspense
 export default function PlanTripPageWrapper() {
   return (
     <Suspense fallback={
@@ -1413,7 +1391,7 @@ export default function PlanTripPageWrapper() {
         </div>
       </div>
     }>
-      <DynamicInnerPlanTripPageContent />
+      <InnerPlanTripPageContent />
     </Suspense>
   );
 }
