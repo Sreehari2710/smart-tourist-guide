@@ -4,13 +4,14 @@
 
 import './globals.css'; // Global CSS file
 import { Inter } from 'next/font/google'; // Google Font import
+import React, { Suspense } from 'react'; // Import Suspense from React
 
 // Initialize the Inter font with Latin subset.
 const inter = Inter({ subsets: ['latin'] });
 
 // Metadata for the application, displayed in the browser tab.
 export const metadata = {
-  title: 'Pathora', // Application title
+  title: 'pathora', // Application title
   description: 'Your smart companion for city exploration.', // Application description
 };
 
@@ -23,7 +24,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* Apply the Inter font to the body of the document */}
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {/* Wrap children with Suspense to handle client-side hooks during SSR */}
+        <Suspense fallback={<div>Loading...</div>}>
+          {children}
+        </Suspense>
+      </body>
     </html>
   );
 }
+
+
+
