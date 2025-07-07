@@ -1,5 +1,11 @@
-"use client"
-export const dynamic = 'force-dynamic'
+// app/plan-trip/page.tsx
+// This component renders the UI for planning a new trip, now with a conversational AI interface
+// powered by Gemini API for refining trip suggestions.
+
+'use client'; // This directive is essential for client-side interactivity.
+
+// Force dynamic rendering for this page to prevent useSearchParams() prerendering issues.
+export const dynamic = 'force-dynamic';
 
 
 import type React from "react"
@@ -538,6 +544,7 @@ export default function PlanTripPage() {
       setFormMessageType("success")
 
       // Initialize chat history with the initial prompt and response
+      // This line is moved inside the 'if (!initialSuggestedPlaces)' block
       setChatHistory([
         { role: "user", parts: [{ text: prompt }] },
         { role: "model", parts: [{ text: JSON.stringify(initialSuggestedPlaces, null, 2) }] }, // Store the actual JSON response
@@ -995,7 +1002,7 @@ export default function PlanTripPage() {
                         className="h-5 w-5 text-sky-600 rounded focus:ring-sky-500 border-slate-300 mr-3"
                       />
                       <option.icon className="mr-2 text-slate-600" />
-                      <span className="text-sm font-medium text-slate-700">{option.label}</span>
+                      <span className="text-sm font-medium">{option.label}</span>
                     </label>
                   ))}
                 </div>
@@ -1321,7 +1328,7 @@ export default function PlanTripPage() {
                   onClick={() => {
                     if (currentTripId) {
                       // For now, we'll navigate to the trip details page which should have map functionality
-                      router.push(`/view-map?tripId=${currentTripId}`)
+                      router.push(`/view-map?tripId=${currentTripId}`);
                     }
                   }}
                   className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1391,5 +1398,5 @@ export default function PlanTripPage() {
         }
       `}</style>
     </div>
-  )
+  );
 }
