@@ -1,7 +1,9 @@
 Smart Tourist Guide
+
 Welcome to the Smart Tourist Guide! This is a Next.js application designed to help users plan personalized city trips with the power of AI, manage their itineraries, and visualize their routes on an interactive map. It leverages Supabase for backend services, including authentication, database storage, and Edge Functions for features like email notifications.
 
 🌟 Features
+
 User Authentication: Secure sign-up, login, and logout.
 
 AI-Powered Trip Planning: Generate personalized trip itineraries based on destination, dates, duration, and interests using Google Gemini API.
@@ -21,9 +23,11 @@ User Feedback & Support: Submit feedback and support requests directly from the 
 Responsive Design: Optimized for seamless experience across various devices (desktop, tablet, mobile).
 
 🚀 Getting Started
+
 Follow these steps to get your Smart Tourist Guide project up and running on your local machine.
 
 Prerequisites
+
 Before you begin, ensure you have the following installed:
 
 Node.js: Version 18.x or higher (LTS recommended).
@@ -306,6 +310,7 @@ Navigate to Authentication (shield icon) -> URL Configuration.
 Set the "Redirect URL (Email Confirmation)" to your local development URL: http://localhost:3000/
 
 🏃 Running the Application
+
 Once all the setup steps are complete, you can run the development server:
 
 npm run dev
@@ -344,9 +349,11 @@ send-trip-email/index.ts: Edge Function for sending trip itineraries via email.
 delete-user-function/index.ts: Edge Function for securely deleting user accounts and associated data.
 
 🌐 Deployment
+
 This project can be easily deployed to platforms like Netlify or Vercel. Both offer seamless continuous deployment from Git repositories. Remember to set your environment variables (Supabase and API keys) in their respective dashboards.
 
 🐛 Troubleshooting
+
 TypeError: m is not a function or issues with react-leaflet during build: Ensure that client-side components like MapContainer are dynamically imported with ssr: false and that any components using useSearchParams or window objects are marked with 'use client' and potentially wrapped in a client-side conditional render or Suspense boundary.
 
 "Database error deleting user" from Supabase Admin UI: This is likely due to foreign key constraints. Ensure you have run the ON DELETE CASCADE SQL scripts as detailed in the "Supabase Database Setup" section.
@@ -364,7 +371,9 @@ Check Supabase Function logs for detailed error messages during invocation.
 CORS errors when calling Edge Functions: Ensure the dynamicCorsHeaders are correctly configured in your Edge Functions to allow requests from your frontend's origin.
 
 🤝 Contributing
+
 Contributions are welcome! Feel free to open issues or submit pull requests.
 
 📄 License
+
 This project is open-source and available under the MIT License.
